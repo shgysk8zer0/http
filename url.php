@@ -71,20 +71,9 @@ class URL implements URLInterface, JsonSerializable
 		];
 	}
 
-	public function jsonSerialize(): array
+	public function jsonSerialize(): string
 	{
-		return [
-			'protocol'     => $this->getProtocol(),
-			'username'     => $this->getUsername(),
-			'password'     => $this->getPassword(),
-			'hostname'     => $this->getHostname(),
-			'port'         => $this->getPort(),
-			'pathname'     => $this->getPathname(),
-			'search'       => $this->getSearch(),
-			'searchParams' => $this->getSearchParams(),
-			'hash'         => $this->getHash(),
-			'href'         => $this->gethref(),
-		];
+		return $this->getHref();
 	}
 
 	public function __toString(): string

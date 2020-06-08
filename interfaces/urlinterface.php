@@ -10,6 +10,8 @@ interface URLInterface extends Serializable
 
 	public function __toString(): string;
 
+	public function jsonSerialize(): string;
+
 	public function getHref(): string;
 
 	public function setHref(string $val): void;
