@@ -7,12 +7,18 @@ use \shgysk8zer0\HTTP\Interfaces\{
 	URLSearchParamsInterface,
 };
 
+use \shgysk8zer0\HTTP\Traits\{
+	PathsTrait,
+};
+
 use \InvalidArgumentException;
 
 use \JsonSerializable;
 
 class URL implements URLInterface, JsonSerializable
 {
+	use PathsTrait;
+
 	private const DEFAULTS = [
 		'scheme'   => null,
 		'host'     => null,
@@ -43,7 +49,22 @@ class URL implements URLInterface, JsonSerializable
 	public function __construct(string $url, ?string $base = null)
 	{
 		if (isset($base) and filter_var($base, FILTER_VALIDATE_URL)) {
-			$parsed = array_merge(self::DEFAULTS, parse_url($base), parse_url($url));
+			$parsed_base = parse_url($base);
+			$parsed_url  = parse_url($url);
+
+			if (array_key_exists('path', $parsed_url) and array_key_exists('path', $parsed_base)) {
+				$parsed = array_merge(
+					self::DEFAULTS,
+					$parsed_base,
+					$parsed_url,
+					[
+						'path' => $this->_getRelativePath($parsed_url['path'], $parsed_base['path']),
+					]
+				);
+
+			} else {
+				$parsed = array_merge(self::DEFAULTS, $parsed_base, $parsed_url);
+			}
 			$this->setHostname($parsed['host']);
 			$this->setProtocol($parsed['scheme']);
 			$this->setPathname($parsed['path']);
