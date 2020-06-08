@@ -22,7 +22,11 @@ class URLSearchParams implements URLSearchParamsInterface, JsonSerializable
 
 	public function __toString(): string
 	{
-		return http_build_query($this->_params);
+		if (count($this->_params) === 0) {
+			return '';
+		} else {
+			return http_build_query($this->_params);
+		}
 	}
 
 	public function jsonSerialize(): array

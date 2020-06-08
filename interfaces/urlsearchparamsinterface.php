@@ -5,6 +5,8 @@ use \Serializable;
 
 interface URLSearchParamsInterface extends Serializable
 {
+	public function __toString(): string;
+
 	public function append(string $name, string $value): bool;
 
 	public function get(string $name):? string;
