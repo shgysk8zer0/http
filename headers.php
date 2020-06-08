@@ -155,4 +155,16 @@ class Headers implements HeadersInterface
 			return false;
 		}
 	}
+
+	public static function fromRequestHeaders():? HeadersInterface
+	{
+		if (function_exists('getallheaders')) {
+			$headers = new self(getallheaders());
+			$headers->delete('host');
+			$headers->delete('cookie');
+			return $headers;
+		} else {
+			return null;
+		}
+	}
 }
