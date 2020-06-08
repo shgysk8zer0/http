@@ -6,7 +6,7 @@ use \shgysk8zer0\HTTP\Interfaces\HeadersInterface;
 
 use \JsonSerializable;
 
-class Headers implements HeadersInterface
+class Headers implements HeadersInterface, JsonSerializable
 {
 	private $_headers = [];
 

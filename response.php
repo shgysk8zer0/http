@@ -61,10 +61,10 @@ class Response extends HTTPStatusCodes implements ResponseInterface, LoggerAware
 	public function unserialize($data): void
 	{
 		if ($parsed = unserialize($data)) {
-			$this->setUrl($data['url']);
-			$this->setStatus($data['status']);
-			$this->setHeaders($data['headers']);
-			$this->setBody($data['body']);
+			$this->setUrl($parsed['url']);
+			$this->setStatus($parsed['status']);
+			$this->setHeaders($parsed['headers']);
+			$this->setBody($parsed['body']);
 		}
 	}
 
