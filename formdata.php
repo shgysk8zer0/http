@@ -12,11 +12,13 @@ use \Traversable;
 
 use \ArrayIterator;
 
+use \CURLFile;
+
 class FormData implements FormDataInterface, JsonSerializable, IteratorAggregate
 {
-	private $_data = [];
+	private $_data  = [];
 
-	private $_current_key = null;
+	public const CONTENT_TYPE = 'multipart/form-data';
 
 	public function __construct(iterable $data = null)
 	{
@@ -58,6 +60,26 @@ class FormData implements FormDataInterface, JsonSerializable, IteratorAggregate
 			$this->_data[$name][] = $value;
 		} else {
 			$this->_data[$name] = [$value];
+		}
+
+		return true;
+	}
+
+	public function attach(
+		string $filename,
+		string $type     = '',
+		string $postname = '',
+		bool   $append   = false
+	): bool
+	{
+		if (! file_exists($filename)) {
+			return false;
+		} elseif (! $file = new CURLFile($filename, $type, $postname)) {
+			return false;
+		} elseif ($append) {
+			return $this->append($file->getPostFilename(), $file);
+		} else {
+			return $this->set($file->getPostFilename(), $file);
 		}
 	}
 
@@ -120,11 +142,11 @@ class FormData implements FormDataInterface, JsonSerializable, IteratorAggregate
 
 	public function entries(): iterable
 	{
-		foreach ($this->_data as $key => $value) {
-			if (count($value) === 1) {
-				yield [$key, $value[0]];
+		foreach ($this->_data as $key => $values) {
+			if (is_array($values) and count($values) === 1) {
+				yield [$key, $values[0]];
 			} else {
-				yield [$key, $value];
+				yield [$key, $values];
 			}
 		}
 	}
@@ -147,6 +169,35 @@ class FormData implements FormDataInterface, JsonSerializable, IteratorAggregate
 	public function formData(): FormDataInterface
 	{
 		return $this;
+	}
+
+	public function setPostFields($ch): bool
+	{
+		if (is_resource($ch)) {
+			$body = [];
+
+			foreach ($this->_data as $key => $values) {
+				if (is_array($values) and count($values) > 1) {
+					$n = 0;
+
+					foreach ($values as $value) {
+						$body["{$key}[{$n}]"] = $value;
+						$n++;
+					}
+				} else {
+					$body[$key] = is_array($values) ? $values[0] : $values;
+				}
+			}
+
+			return curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+		} else {
+			return false;
+		}
+	}
+
+	public function getContentTypeHeader():? string
+	{
+		return null;//'Content-Type: ' . self::CONTENT_TYPE;
 	}
 
 	public function getIterator(): Traversable

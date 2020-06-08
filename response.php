@@ -217,9 +217,7 @@ class Response extends HTTPStatusCodes implements ResponseInterface, LoggerAware
 					$headers->delete('host');
 					$headers->delete('x-powered-by');
 
-					foreach ($headers->entries() as $entry) {
-						header("{$entry[0]}: {$entry[1]}");
-					}
+					$headers->send();
 				}
 
 				echo $this->text();

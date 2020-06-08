@@ -5,6 +5,13 @@ interface FormDataInterface extends BodyInterface
 {
 	public function append(string $name, string $value): bool;
 
+	public function attach(
+		string $filename,
+		string $type     = '',
+		string $postname = '',
+		bool   $append   = false
+	): bool;
+
 	public function get(string $name);
 
 	public function getAll(string $name):? array;

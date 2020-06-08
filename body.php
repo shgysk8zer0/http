@@ -13,9 +13,11 @@ class Body implements BodyInterface, JsonSerializable
 {
 	private $_data = null;
 
-	public function __construct(?string $response = null)
+	private $_content_type = null;
+
+	public function __construct(?string $data = null)
 	{
-		$this->_data = $response;
+		$this->_data = $data;
 	}
 
 	public function serialize(): string
@@ -60,5 +62,33 @@ class Body implements BodyInterface, JsonSerializable
 	public function formdata():? FormDataInterface
 	{
 		return null;
+	}
+
+	public function setPostFields($ch): bool
+	{
+		if (is_resource($ch)) {
+			return curl_setopt($ch, CURLOPT_POSTFIELDS, $this->text());
+		} else {
+			return false;
+		}
+	}
+
+	public function getContentType():? string
+	{
+		return $this->_content_type;
+	}
+
+	public function setContentType(?string $val): void
+	{
+		$this->_content_type = $val;
+	}
+
+	public function getContentTypeHeader():? string
+	{
+		if ($type = $this->getContentType()) {
+			return "Content-Type: {$type}";
+		} else {
+			return null;
+		}
 	}
 }

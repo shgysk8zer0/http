@@ -143,4 +143,16 @@ class Headers implements HeadersInterface
 
 		return $headers;
 	}
+
+	public function send(): bool
+	{
+		if (! headers_sent()) {
+			foreach ($this->entries() as $entry) {
+				header("{$entry[0]}: {$entry[1]}");
+			}
+			return true;
+		} else {
+			return false;
+		}
+	}
 }

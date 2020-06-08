@@ -15,4 +15,8 @@ interface BodyInterface extends Serializable
 	public function json();
 
 	public function formData():? FormDataInterface;
+
+	public function getContentTypeHeader():? string;
+
+	public function setPostFields($ch): bool;
 }
