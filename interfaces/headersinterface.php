@@ -21,4 +21,6 @@ interface HeadersInterface extends Serializable
 	public function values(): iterable;
 
 	public function entries(): iterable;
+
+	public static function fromRequestHeaders(string ...$include):? HeadersInterface;
 }
