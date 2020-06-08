@@ -1,6 +1,7 @@
 *.sql
 /img/icons.svg
 *.min.*
+/.cache/
 *.map
 ~*
 *.bak

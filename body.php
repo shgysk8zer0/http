@@ -22,13 +22,13 @@ class Body implements BodyInterface, JsonSerializable
 
 	public function serialize(): string
 	{
-		return serialize(['data' => $this->_data]);
+		return serialize($this->_data);
 	}
 
 	public function unserialize($data): void
 	{
 		if ($parsed = unserialize($data)) {
-			$this->_data = $data['data'];
+			$this->_data = $parsed;
 		}
 	}
 

@@ -44,7 +44,7 @@ class FormData implements FormDataInterface, JsonSerializable, IteratorAggregate
 
 	public function serialize(): string
 	{
-		return serialzie($this->_data);
+		return serialize($this->_data);
 	}
 
 	public function unserialize($data): void
