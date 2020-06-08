@@ -52,13 +52,13 @@ class URL implements URLInterface, JsonSerializable
 			$parsed_base = parse_url($base);
 			$parsed_url  = parse_url($url);
 
-			if (array_key_exists('path', $parsed_url) and array_key_exists('path', $parsed_base)) {
+			if (array_key_exists('path', $parsed_url)) {
 				$parsed = array_merge(
 					self::DEFAULTS,
 					$parsed_base,
 					$parsed_url,
 					[
-						'path' => $this->_getRelativePath($parsed_url['path'], $parsed_base['path']),
+						'path' => $this->_getRelativePath($parsed_url['path'], $parsed_base['path'] ?? null),
 					]
 				);
 
