@@ -3,7 +3,9 @@ namespace shgysk8zer0\HTTP;
 
 use \shgysk8zer0\HTTP\Interfaces\URLSearchParamsInterface;
 
-class URLSearchParams implements URLSearchParamsInterface
+use \JsonSerializable;
+
+class URLSearchParams implements URLSearchParamsInterface, JsonSerializable
 {
 	private $_params = [];
 
@@ -21,6 +23,11 @@ class URLSearchParams implements URLSearchParamsInterface
 	public function __toString(): string
 	{
 		return http_build_query($this->_params);
+	}
+
+	public function jsonSerialize(): array
+	{
+		return $this->_params;
 	}
 
 	public function __debugInfo(): array
