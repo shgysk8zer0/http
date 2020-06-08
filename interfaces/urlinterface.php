@@ -10,6 +10,8 @@ interface URLInterface extends Serializable
 
 	public function __toString(): string;
 
+	public function jsonSerialize(): string;
+
 	public function getHref(): string;
 
 	public function setHref(string $val): void;
@@ -28,7 +30,7 @@ interface URLInterface extends Serializable
 
 	public function setOrigin(string $val): void;
 
-	public function getPort():? string;
+	public function getPort():? int;
 
 	public function setPort(?int $val): void;
 
@@ -36,7 +38,7 @@ interface URLInterface extends Serializable
 
 	public function setPathname(?string $val): void;
 
-	public function getSearch():? string;
+	public function getSearch(): string;
 
 	public function setSearch(?string $val): void;
 
@@ -44,9 +46,9 @@ interface URLInterface extends Serializable
 
 	public function setSearchParams(URLSearchParamsInterface $val): void;
 
-	public function getHash(bool $escape = false):? string;
+	public function getHash(bool $escape = false): string;
 
-	public function setHash(string $val): void;
+	public function setHash(?string $val): void;
 
 	public function getUsername(bool $escape = false):? string;
 
@@ -55,4 +57,6 @@ interface URLInterface extends Serializable
 	public function getPassword(bool $escape = false):? string;
 
 	public function setPassword(?string $val): void;
+
+	public static function requestUrl():? URLInterface;
 }
