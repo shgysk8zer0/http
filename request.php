@@ -241,6 +241,7 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			curl_setopt($ch, CURLOPT_SAFE_UPLOAD,    true);
 
 			// @TODO implement cookies & auth
+			$headers = [];
 
 			switch($this->getMethod()) {
 				case 'GET':
