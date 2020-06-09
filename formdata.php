@@ -2,7 +2,7 @@
 
 namespace shgysk8zer0\HTTP;
 
-use \shgysk8zer0\HTTP\Interfaces\{FormDataInterface};
+use \shgysk8zer0\HTTP\Interfaces\{FormDataInterface, FileInterface};
 
 use \JsonSerializable;
 
@@ -74,7 +74,7 @@ class FormData implements FormDataInterface, JsonSerializable, IteratorAggregate
 	{
 		if (! file_exists($filename)) {
 			return false;
-		} elseif (! $file = new CURLFile($filename, $type, $postname)) {
+		} elseif (! $file = new File($filename, $type, $postname)) {
 			return false;
 		} elseif ($append) {
 			return $this->append($file->getPostFilename(), $file);
@@ -104,6 +104,7 @@ class FormData implements FormDataInterface, JsonSerializable, IteratorAggregate
 	public function set(string $name, $value): bool
 	{
 		$this->_data[$name] = [$value];
+
 		return true;
 	}
 
@@ -181,11 +182,16 @@ class FormData implements FormDataInterface, JsonSerializable, IteratorAggregate
 					$n = 0;
 
 					foreach ($values as $value) {
-						$body["{$key}[{$n}]"] = $value;
+						$body["{$key}[{$n}]"] = $value instanceof FileInterface ? $value->getFile() : $value;
 						$n++;
 					}
 				} else {
-					$body[$key] = is_array($values) ? $values[0] : $values;
+					if (is_array($values)) {
+						$value = $values[0];
+						$body[$key] = $value instanceof FileInterface ? $value->getFile() : $value;
+					} else {
+						$body[$key] = $values instanceof FileInterface ? $values->getFile() : $values;
+					}
 				}
 			}
 
