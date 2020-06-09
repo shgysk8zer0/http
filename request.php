@@ -3,23 +3,23 @@
 namespace shgysk8zer0\HTTP;
 
 use \shgysk8zer0\HTTP\Interfaces\{
-	RequestInterface,
-	ResponseInterface,
+	BodyInterface,
 	FormDataInterface,
 	HeadersInterface,
-	BodyInterface,
+	RequestInterface,
+	ResponseInterface,
 };
 
 use \shgysk8zer0\HTTP\Abstracts\HTTPStatusCodes;
 
 use \shgysk8zer0\PHPAPI\Interfaces\{
-	LoggerAwareInterface,
 	CacheAwareInterface,
+	LoggerAwareInterface,
 };
 
 use \shgysk8zer0\PHPAPI\Traits\{
-	LoggerAwareTrait,
 	CacheAwareTrait,
+	LoggerAwareTrait,
 };
 
 use \shgysk8zer0\PHPAPI\{NullLogger, NullCache};
@@ -240,11 +240,6 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			curl_setopt($ch, CURLOPT_HEADER,         true);
 			curl_setopt($ch, CURLOPT_SAFE_UPLOAD,    true);
 
-			foreach ($this->getHeaders()->entries() as $entry) {
-				$headers[] = "{$entry[0]}: {$entry[1]}";
-			}
-
-			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 			// @TODO implement cookies & auth
 
 			switch($this->getMethod()) {
@@ -262,6 +257,13 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 				default:
 					curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $this->getMethod());
 			}
+
+
+			foreach ($this->getHeaders()->entries() as $entry) {
+				$headers[] = "{$entry[0]}: {$entry[1]}";
+			}
+
+			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
 			if (isset($this->_body)) {
 				if ($type = $this->getBody()->getContentTypeHeader()) {
