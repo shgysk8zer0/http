@@ -25,11 +25,11 @@ interfaces.
 ```php
 <?php
 
-use \\shgysk8zer0\\HTTP\\{Request, FormData, Headers, File, URL};
+use \shgysk8zer0\HTTP\{Request, FormData, Headers, File, URL};
 
-use \\shgysk8zer0\\HTTP\\Abstracts\\{HTTPStatusCodes as HTTP};
+use \shgysk8zer0\HTTP\Abstracts\{HTTPStatusCodes as HTTP};
 
-use \\shgysk8zer0\\PHPAPI\\{ConsoleLogger, FileCache};
+use \shgysk8zer0\PHPAPI\{ConsoleLogger, FileCache};
 
 spl_autoload_regiser('spl_autoload');
 
