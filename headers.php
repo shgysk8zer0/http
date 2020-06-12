@@ -10,6 +10,10 @@ class Headers implements HeadersInterface, JsonSerializable
 {
 	private $_headers = [];
 
+	private const NO_SPLIT = [
+		'date',
+	];
+
 	public function __construct(array $init = null)
 	{
 		if (isset($init)) {
@@ -62,18 +66,24 @@ class Headers implements HeadersInterface, JsonSerializable
 		}
 	}
 
-	public function getAll(string $name):? array
+	public function getAll(string $name): array
 	{
 		if ($this->has($name)) {
 			return $this->_headers[strtolower($name)];
 		} else {
-			return null;
+			return [];
 		}
 	}
 
 	public function set(string $name, string $value): bool
 	{
-		$this->_headers[strtolower($name)] = [$value];
+		$name = strtolower($name);
+
+		if (in_array($name, self::NO_SPLIT)) {
+			$this->_headers[$name] = [$value];
+		} else {
+			$this->_headers[$name] = array_map('trim', explode(',', $value));
+		}
 		return true;
 	}
 
@@ -123,7 +133,7 @@ class Headers implements HeadersInterface, JsonSerializable
 			$combined = trim($combined);
 
 			if (! empty($combined)) {
-				$parsed = explode(':', $combined);
+				$parsed = explode(':', $combined, 2);
 
 				if (count($parsed) > 1) {
 					[$key, $value] = $parsed;
@@ -133,8 +143,12 @@ class Headers implements HeadersInterface, JsonSerializable
 					if (isset($value)) {
 						$value = trim($value);
 
-						foreach (explode(',', $value) as $sub) {
-							$headers->append($key, trim($sub));
+						if (strtolower($key) === 'date') {
+							$headers->set('date', $value);
+						} else {
+							foreach (explode(',', $value) as $sub) {
+								$headers->append($key, trim($sub));
+							}
 						}
 					}
 				}
@@ -156,30 +170,24 @@ class Headers implements HeadersInterface, JsonSerializable
 		}
 	}
 
-	public static function fromRequestHeaders(string ...$include):? HeadersInterface
+	public static function sent(): bool
 	{
-		if (function_exists('getallheaders')) {
-			if (count($include) === 0) {
-				$headers = new self(getallheaders());
-				$headers->delete('host');
-				$headers->delete('cookie');
+		return ! function_exists('headers_sent') or headers_sent();
+	}
 
-				return $headers;
-			} else {
-				$include = array_map('strtolower', $include);
-				$headers = new self();
-
-				foreach (getallheaders() as $key => $value) {
-					$key = strtolower($key);
-					if (in_array($key, $include)) {
-						$headers->set($key, $value);
-					}
-				}
-
-				return $headers;
-			}
+	public static function fromRequestHeaders(string ...$include): HeadersInterface
+	{
+		if (! function_exists('getallheaders')) {
+			return new self(['Accept' => '*/*']);
+		} elseif (count($include) === 0) {
+				return new self(getallheaders());
 		} else {
-			return null;
+			$include = array_map('strtolower', $include);
+
+			return new self(array_filter(getallheaders(), function(string $key) use ($include): bool
+			{
+				return in_array(strtolower($key), $include);
+			}, ARRAY_FILTER_USE_KEY));
 		}
 	}
 }
