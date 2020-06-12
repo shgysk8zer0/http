@@ -44,11 +44,27 @@ class Response extends HTTPStatusCodes implements ResponseInterface, LoggerAware
 
 	private $_redirected = false;
 
-	public function __construct()
+	public function __construct(?BodyInterface $body = null, array $init = [])
 	{
+		$this->setBody($body);
 		$this->setLogger(new NullLogger());
 		$this->setCache(new NullCache());
-		$this->setHeaders(new Headers());
+
+		if (! array_key_exists('headers', $init)) {
+			$this->setHeaders(new Headers());
+		} elseif (is_array($init['headers'])) {
+			$this->setHeaders(new Headers($init['headers']));
+		} elseif (! is_object($init['headers'])) {
+			throw new InvalidArgumentException('Unsupported init data for Headers');
+		} elseif ($init['headers'] instanceof HeadersInterface) {
+			$this->setHeaders($init['headers']);
+		} else {
+			$this->setHeaders(new Headers(get_object_vars($init['headers'])));
+		}
+
+		if (array_key_exists('status', $init)) {
+			$this->setStatus($init['status']);
+		}
 	}
 
 	public function serialize(): string

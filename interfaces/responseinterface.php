@@ -6,6 +6,8 @@ use \Serializable;
 
 interface ResponseInterface extends Serializable
 {
+	public function __construct(?BodyInterface $body = null, array $init = []);
+
 	public function redirect(string $url, int $status = 302): ResponseInterface;
 
 	public function getStatus(): int;
