@@ -6,6 +6,8 @@ use \Serializable;
 
 interface ResponseInterface extends Serializable
 {
+	public function redirect(string $url, int $status = 302): ResponseInterface;
+
 	public function getStatus(): int;
 
 	public function getStatusText():? string;
@@ -17,6 +19,10 @@ interface ResponseInterface extends Serializable
 	public function getHeaders():? HeadersInterface;
 
 	public function setHeaders(HeadersInterface $val): void;
+
+	public function getRedirected(): bool;
+
+	public function setRedirected(bool $val): void;
 
 	public function getBody():? BodyInterface;
 

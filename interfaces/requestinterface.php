@@ -44,6 +44,14 @@ interface RequestInterface extends Serializable
 
 	public function setMethod(string $val): void;
 
+	public function getRedirect(): string;
+
+	public function setRedirect(string $val): void;
+
+	public function getReferrer(): string;
+
+	public function setReferrer(string $val): void;
+
 	public function getUrl():? string;
 
 	public function setUrl(string $val): void;

@@ -64,6 +64,15 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 		'same-orign',
 	];
 
+	// @TODO enable & handle manual redirects
+	private const REDIRECTS = [
+		'follow',
+		'error',
+		// 'manual',
+	];
+
+	public const USER_AGENT = 'shgysk8zer0 HTTP';
+
 	private $_url = null;
 
 	private $_headers = null;
@@ -77,6 +86,10 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 	private $_credentials = 'omit';
 
 	private $_expiration = null;
+
+	private $_redirect = 'follow';
+
+	private $_referrer = 'client';
 
 	public function __construct(string $url, array $init = [])
 	{
@@ -101,6 +114,14 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			$this->setCredentials($init['credentials']);
 		}
 
+		if (array_key_exists('redirect', $init)) {
+			$this->setRedirect($init['redirect']);
+		}
+
+		if (array_key_exists('referrer', $init)) {
+			$this->setReferrer($init['referrer']);
+		}
+
 		if (! array_key_exists('headers', $init)) {
 			$this->setHeaders(new Headers());
 		} elseif (is_array($init['headers'])) {
@@ -120,6 +141,8 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			'url'         => $this->getUrl(),
 			'method'      => $this->getMethod(),
 			'headers'     => $this->getHeaders(),
+			'redirect'    => $this->getRedirect(),
+			'referrer'    => $this->getReferrer(),
 			'body'        => $this->getBody(),
 			'cache'       => $this->getCacheMode(),
 			'credentials' => $this->getCredentials(),
@@ -132,6 +155,8 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			'url'         => $this->getUrl(),
 			'method'      => $this->getMethod(),
 			'headers'     => $this->getHeaders(),
+			'redirect'    => $this->getRedirect(),
+			'referrer'    => $this->getReferrer(),
 			'body'        => $this->getBody(),
 			'cache'       => $this->getCacheMode(),
 			'credentials' => $this->getCredentials(),
@@ -145,6 +170,8 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			'url'         => $url,
 			'method'      => $method,
 			'headers'     => $headers,
+			'redirect'    => $redirect,
+			'referrer'    => $referrer,
 			'body'        => $body,
 			'cache'       => $cache,
 			'credentials' => $credentials,
@@ -153,6 +180,8 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			'url'         => null,
 			'method'      => null,
 			'headers'     => new Headers(),
+			'redirect'    => 'follow',
+			'referrer'    => 'client',
 			'body'        => null,
 			'cache'       => 'default',
 			'credentials' => 'omit',
@@ -166,6 +195,8 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 		$this->setCacheMode($cache);
 		$this->setCredentials($credentials);
 		$this->setExpiration($expiration);
+		$this->setRedirect($redirect);
+		$this->setReferrer($referrer);
 	}
 
 	public function jsonSerialize(): array
@@ -174,6 +205,8 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			'url'         => $this->getUrl(),
 			'method'      => $this->getMethod(),
 			'headers'     => $this->getHeaders(),
+			'redirect'    => $this->getRedirect(),
+			'referrer'    => $this->getReferrer(),
 			'body'        => $this->getBody(),
 			'cache'       => $this->getCacheMode(),
 			'credentials' => $this->getCredentials(),
@@ -183,10 +216,14 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 	public function __get(string $name)
 	{
 		switch($name) {
-			case 'url':     return $this->getUrl();
-			case 'method':  return $this->getMethod();
-			case 'headers': return $this->getHeaders();
-			case 'body':    return $this->getBody();
+			case 'url':         return $this->getUrl();
+			case 'method':      return $this->getMethod();
+			case 'headers':     return $this->getHeaders();
+			case 'redirect':    return $this->getRedirect();
+			case 'referrer':    return $this->getReferrer();
+			case 'body':        return $this->getBody();
+			case 'cache':       return $this->getCacheMode();
+			case 'credentials': return $this->getCredentials();
 			default: throw new InvalidArgumentException(sprintf('Invalid property: %s', $name));
 		}
 	}
@@ -307,6 +344,26 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 	public function setMethod(string $val): void
 	{
 		$this->_method = strtoupper($val);
+	}
+
+	public function getRedirect(): string
+	{
+		return $this->_redirect;
+	}
+
+	public function setRedirect(string $val): void
+	{
+		$this->_redirect = $val;
+	}
+
+	public function getReferrer(): string
+	{
+		return $this->_referrer;
+	}
+
+	public function setReferrer(string $val): void
+	{
+		$this->_referrer = $val;
 	}
 
 	public function getUrl():? string
@@ -430,14 +487,36 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			}
 
 			$ch = curl_init($this->getUrl());
+			$referrer = $this->getReferrer();
 
-			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+			switch ($referrer) {
+				case 'client':
+					$url = URL::requestUrl();
+					curl_setopt($ch, CURLOPT_REFERER, $url->getOrigin());
+					unset($url);
+					break;
+				case 'no-referrer':
+					// curl_setopt($ch, CURLOPT_REFERER, '');
+					break;
+				default:
+					curl_setopt($ch, CURLOPT_REFERER, $referrer);
+			}
+			unset($referrer);
+
+			if ($this->getRedirect()) {
+				curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+			} else {
+				curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+			}
+
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 			curl_setopt($ch, CURLOPT_HEADEROPT,      CURLHEADER_UNIFIED);
 			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-			curl_setopt($ch, CURLOPT_USERAGENT,      __CLASS__);
+			curl_setopt($ch, CURLOPT_USERAGENT,      self::USER_AGENT);
 			curl_setopt($ch, CURLOPT_HEADER,         true);
 			curl_setopt($ch, CURLOPT_SAFE_UPLOAD,    true);
+
+			// @TODO improve handling of cookies via CURLOPT_COOKIE
 
 			if (is_int($timeout)) {
 				curl_setopt($ch, CURLOPT_TIMEOUT_MS,     $timeout);
@@ -543,6 +622,7 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 				$response = new Response();
 				$response->setLogger($this->logger);
 				$response->setUrl($url);
+				$response->setRedirected($response->getUrl() !== $this->getUrl());
 
 				if (! in_array($this->getMethod(), ['HEAD'])) {
 					$response->setBody(new Body($body));
