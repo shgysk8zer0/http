@@ -619,17 +619,22 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 					$headers->delete('cookie');
 				}
 
-				$response = new Response();
-				$response->setLogger($this->logger);
-				$response->setUrl($url);
-				$response->setRedirected($response->getUrl() !== $this->getUrl());
-
-				if (! in_array($this->getMethod(), ['HEAD'])) {
-					$response->setBody(new Body($body));
+				if (! in_array($this->getMethod(), ['HEAD', 'OPTIONS'])) {
+					$response = new Response(new Body($body), [
+						'status'  => $status ?? self::INTERNAL_SERVER_ERROR,
+						'headers' => $headers,
+					]);
+				} else {
+					$response = new Response(null, [
+						'status'  => $status ?? self::INTERNAL_SERVER_ERROR,
+						'headers' => $headers,
+					]);
 				}
 
-				$response->setStatus($status);
-				$response->setHeaders($headers);
+				$response->setUrl($url);
+				$response->setRedirected($response->getUrl() !== $this->getUrl());
+				$response->setLogger($this->logger);
+				$response->setCache($this->cache);
 			}
 
 			curl_close($ch);
