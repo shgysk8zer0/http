@@ -10,6 +10,8 @@ interface HeadersInterface extends Serializable
 
 	public function get(string $name):? string;
 
+	public function getAll(string $name): array;
+
 	public function set(string $name, string $value): bool;
 
 	public function has(string $name): bool;
@@ -22,5 +24,5 @@ interface HeadersInterface extends Serializable
 
 	public function entries(): iterable;
 
-	public static function fromRequestHeaders(string ...$include):? HeadersInterface;
+	public static function fromRequestHeaders(string ...$include): HeadersInterface;
 }

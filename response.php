@@ -42,10 +42,13 @@ class Response extends HTTPStatusCodes implements ResponseInterface, LoggerAware
 
 	private $_body = null;
 
+	private $_redirected = false;
+
 	public function __construct()
 	{
 		$this->setLogger(new NullLogger());
 		$this->setCache(new NullCache());
+		$this->setHeaders(new Headers());
 	}
 
 	public function serialize(): string
@@ -54,18 +57,31 @@ class Response extends HTTPStatusCodes implements ResponseInterface, LoggerAware
 			'url'        => $this->getUrl(),
 			'status'     => $this->getStatus(),
 			'headers'    => $this->getHeaders(),
+			'redirect'   => $this->getRedirected(),
 			'body'       => $this->getBody(),
 		]);
 	}
 
 	public function unserialize($data): void
 	{
-		if ($parsed = unserialize($data)) {
-			$this->setUrl($parsed['url']);
-			$this->setStatus($parsed['status']);
-			$this->setHeaders($parsed['headers']);
-			$this->setBody($parsed['body']);
-		}
+		[
+			'url'        => $url,
+			'status'     => $status,
+			'headers'    => $headers,
+			'body'       => $body,
+			'redirected' => $redirected,
+		] = array_merge([
+			'url'        => null,
+			'status'     => self::OK,
+			'headers'    => new Headers(),
+			'body'       => null,
+			'redirected' => false,
+		], unserialize($data));
+
+		$this->setUrl($url);
+		$this->setStatus($status);
+		$this->setHeaders($headers);
+		$this->setBody($body);
 	}
 
 	public function jsonSerialize(): array
@@ -75,6 +91,7 @@ class Response extends HTTPStatusCodes implements ResponseInterface, LoggerAware
 			'status'     => $this->getStatus(),
 			'statusText' => $this->getStatusText(),
 			'headers'    => $this->getHeaders(),
+			'redirected' => $this->getRedirected(),
 			'body'       => $this->getBody(),
 		];
 	}
@@ -91,6 +108,7 @@ class Response extends HTTPStatusCodes implements ResponseInterface, LoggerAware
 			'status'     => $this->getStatus(),
 			'statusText' => $this->getStatusText(),
 			'headers'    => $this->getHeaders(),
+			'redirected' => $this->getRedirected(),
 			'body'       => $this->getBody(),
 		];
 	}
@@ -98,12 +116,25 @@ class Response extends HTTPStatusCodes implements ResponseInterface, LoggerAware
 	public function __get(string $name)
 	{
 		switch($name) {
-			case 'url': return $this->getUrl();
-			case 'status': return $this->getStatus();
+			case 'url':        return $this->getUrl();
+			case 'status':     return $this->getStatus();
 			case 'statusText': return $this->getStatusText();
-			case 'headers': return $this->getHeaders();
-			case 'body': return $this->getBody();
+			case 'headers':    return $this->getHeaders();
+			case 'redirectd':  return $this->getRedirected();
+			case 'body':       return $this->getBody();
 			default: throw new InvalidArgumentException(sprintf('Invalid property: %s', $name));
+		}
+	}
+
+	public function redirect(string $url, int $status = self::FOUND): ResponseInterface
+	{
+		if (filter_var($url, FILTER_VALIDATE_URL)) {
+			$this->getHeaders()->set('Location', $url);
+			$this->setStatus($status);
+			$this->setBody(null);
+			return $this;
+		} else {
+			throw new InvalidArgumentException(sprintf('%s is not a valid URL', $url));
 		}
 	}
 
@@ -178,6 +209,16 @@ class Response extends HTTPStatusCodes implements ResponseInterface, LoggerAware
 	{
 		$status = $this->getStatus();
 		return ($status > 199 && $status < 300);
+	}
+
+	public function getRedirected(): bool
+	{
+		return $this->_redirected;
+	}
+
+	public function setRedirected(bool $val): void
+	{
+		$this->_redirected = $val;
 	}
 
 	public function text():? string
