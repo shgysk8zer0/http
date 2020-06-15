@@ -7,8 +7,6 @@ use \CURLFile;
 
 interface FileInterface extends Serializable
 {
-	public function __construct(string $filename, ?string $mimetype = null, string $postname = '');
-
 	public function jsonSerialize(): array;
 
 	public function getFile(): CURLFile;
@@ -22,4 +20,6 @@ interface FileInterface extends Serializable
 	public function getPostFilename():? string;
 
 	public function setPostFilename(string $name): void;
+
+	public function saveAs(string $path):? FileInterface;
 }

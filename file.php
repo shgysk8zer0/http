@@ -14,10 +14,10 @@ class File implements JsonSerializable, FileInterface
 {
 	use FileTrait;
 
-	final public function __construct(
+	public function __construct(
 		string  $filename,
 		?string $mimetype = null,
-		string  $postname = ''
+		?string  $postname = ''
 	) {
 		if (! $this->_setFile($filename, $mimetype, $postname)) {
 			throw new InvalidArgumentException(sprintf('File %s not found', $filename));
@@ -40,5 +40,14 @@ class File implements JsonSerializable, FileInterface
 			'mime'     => $this->getMimeType(),
 			'postname' => $this->getPostFileName(),
 		];
+	}
+
+	public function saveAs(string $path):? FileInterface
+	{
+		if (copy($this->getFileName(), $path)) {
+			return new self($path, $this->getMimeType(), $this->getPostFileName());
+		} else {
+			return null;
+		}
 	}
 } 

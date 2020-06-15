@@ -1,7 +1,9 @@
 <?php
 
 namespace shgysk8zer0\HTTP;
+
 use \FilesystemIterator as FS;
+
 use \InvalidArgumentException;
 
 final class Linter
