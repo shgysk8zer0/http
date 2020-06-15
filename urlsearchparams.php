@@ -3,10 +3,14 @@ namespace shgysk8zer0\HTTP;
 
 use \shgysk8zer0\HTTP\Interfaces\URLSearchParamsInterface;
 
+use \shgysk8zer0\HTTP\Traits\InputValidatorTrait;
+
 use \JsonSerializable;
 
 class URLSearchParams implements URLSearchParamsInterface, JsonSerializable
 {
+	use InputValidatorTrait;
+
 	private $_params = [];
 
 	public function __construct(?string $params = null)
@@ -84,7 +88,7 @@ class URLSearchParams implements URLSearchParamsInterface, JsonSerializable
 
 	public function set(string $name, string $value): bool
 	{
-		$this->_params[$name] = $value;
+		$this->_params[$name] = [$value];
 		return true;
 	}
 

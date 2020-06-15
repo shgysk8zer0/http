@@ -25,60 +25,94 @@ interfaces.
 ```php
 <?php
 
-use \shgysk8zer0\HTTP\{Request, FormData, Headers, File, URL};
+use \shgysk8zer0\HTTP\{Request, Response, Body, FormData, Headers, File, URL};
 
 use \shgysk8zer0\HTTP\Abstracts\{HTTPStatusCodes as HTTP};
 
 use \shgysk8zer0\PHPAPI\{ConsoleLogger, FileCache};
 
+use \DateInterval;
+
 spl_autoload_regiser('spl_autoload');
 
 set_include_path($classes_dir . PATH_SEPARATOR . get_include_path());
 
-$url = new URL('../some/endpoint', 'https://example.com/wrong-path/');
-
-$cache = new FileCache();
-$logger = new ConsoleLogger();
 
 try {
-  if ($cache->has($url)) {
-    $resp = $cache->get($url);
-    http_response_code($resp->getStatus());
-    header('Content-Type: ' . $resp->headers->get('Content-Type');
-    exit($resp->body);
-  } else {
-    $req = new Request($url, [
-      'method' => 'POST',
-      'headers' => new Headers([
+  $url = new URL('../some/endpoint', 'https://example.com/wrong-path/');
+
+  $cache = new FileCache();
+  $logger = new ConsoleLogger();
+  
+  $req = new Request($url, [
+    'method'      => 'POST',
+    'referrer'    => 'no-referrer',
+    'redirect'    => 'follow',
+    'credentials' => 'omit',
+    'cache'       => 'default',
+    'headers'     => new Headers([
         'Accept' => 'application/json',
-      ]),
-      'body' => new FormData([
+        'X-FOO'  => 'bar',
+    ]),
+    'body'        => new FormData([
         'username' => $username,
         'token'    => $token,
-        'upload'   => new File($filename, null, 'upload'),
-      ])
+        'file'     => new File($filename, null, 'file'),
+        'upload'   => new UploadFile('upload'),
+    ])
+  ]);
+  
+  $req->setLogger($logger);
+  
+  // For compatibility with `CacheInterface` `Request.cache = 'default'` -> `Request::setCacheMode('default')`
+  // and `Request::setCache(CacheInterface $cache)`
+  $req->setCache($cache);
+  
+  if ($resp = $req->send($timeout)) {
+    $resp->headers->set('Content-SecurityPolicy', ContentSecurityPolicy::fromIniFile('./csp.ini'));
+    
+    $resp->headers->set('Feature-Policy', new FeaturePolicy([
+      'geolocation' => 'self',
+      'camera'      => 'self',
+    ]));
+    
+    $resp->headers->append('Set-Cookie', new Cookie('name','value', [
+      'secure'   => true,
+      'httpOnly' => true,
+      'expires'  => new DateInterval('P1D'),
+      'sameSite' => 'Strict',
     ]);
     
-    $req->setLogger($logger);
-    $req->setCache($cache);
+    // `Response::send()` sends HTTP status code, headers, & body
+    $resp->send();
+  } else {
+    $resp = new Response(new Body('An unknown error occured'), [
+      'headers' => new Headers([
+        'Content-Security-Policy' => new ContentSecurityPolicy(['default-src' => 'self']),
+        'Content-Type'            => 'text/plain',
+      ]),
+      'status'                    => HTTP::BAD_GATEWAY,
+    ]);
     
-    if ($resp = $req->send($timeout)) {
-      $cache->set($url, $resp, new DateInterval('PT1H30M'));
-      http_response_code($resp->getStatus());
-      header('Content-Type: ' . $resp->headers->get('Content-Type');
-      exit($resp->body);
-    }
+    $resp->send();
   }
 } catch (Throwable $e) {
-  http_response_code(HTTP::INTERNAL_SERVER_ERROR);
-  
-  $logger->error('[{class} {code}] "{message} at {file}:{line}', [
+  $logger->error('[{class} {code}] "{message}" at {file}:{line}', [
     'class'   => get_class($e),
     'code'    => $e->getCode(),
     'message' => $e->getMessage(),
     'file'    => $e->getFile(),
     'line'    => $e->getLine(),
   ]);
+  
+  $resp = new Response(new Body('An error occured'), [
+    'status'  => HTTP::INTERNAL_SERVER_ERROR,
+    'headers' => new Headers([
+      'Content-Type' => 'text/plain',
+    ]),
+  ]);
+  
+  $resp->send();
 }
 ```
 
@@ -92,4 +126,4 @@ git submodule add https://github.com/shgysk8zer0/http.git $classes_dir/shgysk8ze
 
 ## Dependencies
 Loggers and caches are used from [shgysk8zer0/PHPAPI](https://github.com/shgysk8zer0/phpapi).
-You will need to add that as a submodule in a valid path as well.
+You will need to add that as a submodule to `$classes_dir/shgysk8zer0/phpapi`.

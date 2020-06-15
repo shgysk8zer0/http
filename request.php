@@ -5,6 +5,7 @@ namespace shgysk8zer0\HTTP;
 use \shgysk8zer0\HTTP\Interfaces\{
 	BodyInterface,
 	CacheInterface,
+	CookiesInterface,
 	FormDataInterface,
 	HeadersInterface,
 	RequestInterface,
@@ -16,6 +17,7 @@ use \shgysk8zer0\HTTP\Abstracts\HTTPStatusCodes;
 use \shgysk8zer0\PHPAPI\Interfaces\{
 	CacheAwareInterface,
 	LoggerAwareInterface,
+	LoggerInterface,
 };
 
 use \shgysk8zer0\PHPAPI\Traits\{
@@ -34,6 +36,8 @@ use \Throwable;
 use \InvalidArgumentException;
 
 use \RuntimeException;
+
+use \UnexpectedValueException;
 
 class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareInterface, CacheAwareInterface, JsonSerializable
 {
@@ -85,6 +89,8 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 
 	private $_credentials = 'omit';
 
+	private $_cookies;
+
 	private $_expiration = null;
 
 	private $_redirect = 'follow';
@@ -95,6 +101,8 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 	{
 		$this->setLogger(new NullLogger());
 		$this->setCache(new NullCache());
+
+		$this->_cookies = new Cookies();
 
 		$this->setUrl($url);
 
@@ -146,6 +154,7 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			'body'        => $this->getBody(),
 			'cache'       => $this->getCacheMode(),
 			'credentials' => $this->getCredentials(),
+			'cookies'     => $this->getCookies(),
 		];
 	}
 
@@ -161,6 +170,7 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			'cache'       => $this->getCacheMode(),
 			'credentials' => $this->getCredentials(),
 			'expiration'  => $this->getExpiration(),
+			'cookies'     =>$this->getCookies(),
 		]);
 	}
 
@@ -176,6 +186,7 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			'cache'       => $cache,
 			'credentials' => $credentials,
 			'expiration'  => $expiration,
+			'cookies'     => $cookies,
 		] = array_merge([
 			'url'         => null,
 			'method'      => null,
@@ -186,6 +197,7 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			'cache'       => 'default',
 			'credentials' => 'omit',
 			'expiration'  => null,
+			'cookies'     => null,
 		], unserialize($data));
 
 		$this->setUrl($url);
@@ -197,6 +209,7 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 		$this->setExpiration($expiration);
 		$this->setRedirect($redirect);
 		$this->setReferrer($referrer);
+		$this->_cookies = $cookies;
 	}
 
 	public function jsonSerialize(): array
@@ -224,6 +237,7 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			case 'body':        return $this->getBody();
 			case 'cache':       return $this->getCacheMode();
 			case 'credentials': return $this->getCredentials();
+			case 'cookies':     return $this->getCookies();
 			default: throw new InvalidArgumentException(sprintf('Invalid property: %s', $name));
 		}
 	}
@@ -286,6 +300,11 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 		} else {
 			throw new InvalidArgumentException(sprintf('Invalid cache mode: %s', $val));
 		}
+	}
+
+	public function getCookies(): CookiesInterface
+	{
+		return $this->_cookies;
 	}
 
 	public function getCredentials(): string
@@ -455,18 +474,103 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 		}
 	}
 
-	public static function fromRequest(): RequestInterface
+	public static function fromRequest(?LoggerInterface $logger = null): RequestInterface
 	{
 		$req = new self(URL::requestUrl(), [
 			'headers'     => Headers::fromRequestHeaders(),
 			'credentials' => 'include',
 		]);
 
+		$req->_cookies = Cookies::requestCookies();
+
+		if (isset($logger)) {
+			$req->setLogger($logger);
+		} else {
+			$logger = new NullLogger();
+		}
+
 		if (array_key_exists('REQUEST_METHOD', $_SERVER)) {
 			$req->setMethod($_SERVER['REQUEST_METHOD']);
 
-			if ($req->getMethod() === 'POST') {
-				$req->setBody(new FormData($_POST));
+			// These request methods are POST-like
+			if (in_array($req->getMethod(), ['POST', 'PUT'])) {
+				if ($req->getHeaders()->has('Content-Type')) {
+					switch (strtolower(trim(explode(';', $req->getHeaders()->get('Content-Type'), 2)[0]))) {
+						case 'application/x-www-form-urlencoded':
+							$body = new FormData($_POST);
+							break;
+						case 'multipart/form-data':
+							// @TODO handle all possible $_FILES structure (e.g. $_FILES['upload']['foo'][3])
+							// @TODO determine how to handle errors
+							$body = new FormData($_POST);
+
+							foreach ($_FILES as $key => $value) {
+								$logger->debug('Checking upload: $_FILES[\'{key}\']', ['key' => $key]);
+
+								if (is_array($value['tmp_name'])) {
+									for ($n = 0; $n < count($value['tmp_name']); $n++) {
+										try {
+											$body->append($key, new UploadFile(
+												$value['tmp_name'][$n],
+												$value['name'][$n] ?? $key,
+												$value['type'][$n],
+												$value['error'][$n],
+												$value['size'][$n]
+											));
+										} catch (Throwable $e) {
+											$logger->warning('[{class} {code}] "{message}" at {file}:{line}', [
+												'class'   => get_class($e),
+												'code'    => $e->getCode(),
+												'message' => $e->getMessage(),
+												'file'    => $e->getFile(),
+												'line'    => $e->getLine(),
+											]);
+										}
+									}
+								} else {
+									try {
+										[
+											'tmp_name' => $filename,
+											'name'     => $name,
+											'type'     => $mimetype,
+											'error'    => $error,
+											'size'     => $size,
+										] = $value;
+
+										$body->set($key, new UploadFile($filename, $mimetype, $name, $error, $size));
+									} catch (Throwable $e) {
+										$logger->warning('[{class} {code}] "{message}" at {file}:{line}', [
+											'class'   => get_class($e),
+											'code'    => $e->getCode(),
+											'message' => $e->getMessage(),
+											'file'    => $e->getFile(),
+											'line'    => $e->getLine(),
+										]);
+									}
+
+								}
+							}
+							$req->setBody($body);
+							break;
+
+						case 'text/plain':
+						case 'text/json':
+						case 'application/json':
+						case 'text/html':
+						case 'text/xml':
+						case 'application/xml':
+						case 'application/html':
+						case 'application/xhtml+xml':
+							$req->setBody(new Body(file_get_contents('php://input')));
+							break;
+
+						default:
+							// @TODO handle missing text data and non-text data
+							throw new UnexpectedValueException(sprintf('Unsupported Content-Type: %s', $req->getHeaders()->get('Content-Type')));
+					}
+				}
+
+				unset($type);
 			}
 		} else {
 			$req->setMethod('GET');
@@ -617,8 +721,11 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 
 				if ($this->getCredentials() !== 'include') {
 					$headers->delete('cookie');
+					$cookies = new Cookies();
+				} else {
+					$cookies = Cookies::parseHeader($headers->get('cookie'));
 				}
-
+				\shgysk8zer0\PHPAPI\Console::info($cookies);
 				if (! in_array($this->getMethod(), ['HEAD', 'OPTIONS'])) {
 					$response = new Response(new Body($body), [
 						'status'  => $status ?? self::INTERNAL_SERVER_ERROR,
@@ -632,6 +739,7 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 				}
 
 				$response->setUrl($url);
+				$response->setCookies($cookies);
 				$response->setRedirected($response->getUrl() !== $this->getUrl());
 				$response->setLogger($this->logger);
 				$response->setCache($this->cache);

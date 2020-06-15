@@ -4,6 +4,8 @@ namespace shgysk8zer0\HTTP;
 
 use \shgysk8zer0\HTTP\Interfaces\{FormDataInterface, FileInterface};
 
+use \shgysk8zer0\HTTP\Traits\InputValidatorTrait;
+
 use \JsonSerializable;
 
 use \IteratorAggregate;
@@ -16,6 +18,8 @@ use \CURLFile;
 
 class FormData implements FormDataInterface, JsonSerializable, IteratorAggregate
 {
+	use InputValidatorTrait;
+
 	private $_data  = [];
 
 	public const CONTENT_TYPE = 'multipart/form-data';
