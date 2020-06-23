@@ -18,7 +18,7 @@ trait UploadFileTrait
 		int    $size     = 0
 	):? Exception
 	{
-		if (and $error !== UPLOAD_ERR_OK) {
+		if ($error !== UPLOAD_ERR_OK) {
 			switch ($error) {
 				case UPLOAD_ERR_NO_FILE:
 				    return new RuntimeException('No file was uploaded');
