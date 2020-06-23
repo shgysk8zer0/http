@@ -29,7 +29,19 @@ class URLSearchParams implements URLSearchParamsInterface, JsonSerializable
 		if (count($this->_params) === 0) {
 			return '';
 		} else {
-			return http_build_query($this->_params);
+			$params = [];
+
+			foreach ($this->keys() as $key) {
+				$value = $this->getAll($key);
+
+				if (count($value) === 1) {
+					$params[$key] = $value[0];
+				} else {
+					$params[$key] = $value;
+				}
+			}
+
+			return http_build_query($params);
 		}
 	}
 
