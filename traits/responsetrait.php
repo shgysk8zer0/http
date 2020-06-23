@@ -27,6 +27,8 @@ use \shgysk8zer0\PHPAPI\Interfaces\{
 	CacheAwareInterface,
 };
 
+use \InvalidArgumentException;
+
 trait ResponseTrait
 {
 	private $_status = HTTP::OK;
@@ -45,6 +47,7 @@ trait ResponseTrait
 	{
 		switch($name) {
 			case 'url':        return $this->getUrl();
+			case 'ok':         return $this->getOk();
 			case 'status':     return $this->getStatus();
 			case 'statusText': return $this->getStatusText();
 			case 'headers':    return $this->getHeaders();
