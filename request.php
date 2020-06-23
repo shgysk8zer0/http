@@ -461,10 +461,11 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 					}
 
 				case 'only-if-cached':
-					$fallback = new Response();
+					$fallback = new Response(new Body('Gateway Timeout'), [
+						'headers' => new Headers(['Content-Type' => 'text/plain']),
+						'status'  => self::GATEWAY_TIMEOUT,
+					]);
 					$fallback->setUrl($this->getUrl());
-					$fallback->setBody(new Body('Gateway Timeout'));
-					$fallback->setHeaders(new Headers(['Content-Type' => 'text/plain']));
 					$fallback->setStatus($this::GATEWAY_TIMEOUT);
 
 					return $this->cache->get($this->getUrl(), $fallback);
@@ -688,11 +689,11 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 							'url'     => $this->getUrl(),
 							'timeout' => $timeout,
 						]);
-						$resp = new Response();
-						$resp->setStatus(self::GATEWAY_TIMEOUT);
-						$resp->setHeaders(new Headers(['Content-Type' => 'text/plain']));
+						$resp = new Response(new Body('Gateway Timeout'), [
+							'headers' => new Headers(['Content-Type' => 'text/plain']),
+							'status'  => self::GATEWAY_TIMEOUT,
+						]);
 						$resp->setUrl($this->getUrl());
-						$resp->setBody(new Body('Gateway Timeout'));
 						return $resp;
 						break;
 					default:
@@ -700,11 +701,12 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 							'errno' => $errno,
 							'error' => curl_error($ch),
 						]);
-						$resp = new Response();
-						$resp->setStatus(self::BAD_GATEWAY);
-						$resp->setHeaders(new Headers(['Content-Type' => 'text/plain']));
-						$resp->setBody(new Body('An unknown error occured'));
+						$resp = new Response(new Body('An unknown error occured'), [
+							'headers' => new Headers(['Content-Type' => 'text/plain']),
+							'status'  => self::BAD_GATEWAY,
+						]);
 
+						$resp->setUrl($this->getUrl());
 						return $resp;
 				}
 
