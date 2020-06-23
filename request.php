@@ -617,7 +617,7 @@ class Request extends HTTPStatusCodes implements RequestInterface, LoggerAwareIn
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 			curl_setopt($ch, CURLOPT_HEADEROPT,      CURLHEADER_UNIFIED);
 			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 			curl_setopt($ch, CURLOPT_USERAGENT,      self::USER_AGENT);
 			curl_setopt($ch, CURLOPT_HEADER,         true);
 			curl_setopt($ch, CURLOPT_SAFE_UPLOAD,    true);
