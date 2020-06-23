@@ -1,5 +1,6 @@
 # http
-![PHP Lint](https://github.com/shgysk8zer0/http/workflows/PHP%20Lint/badge.svg)
+[]![PHP Lint](https://github.com/shgysk8zer0/http/workflows/PHP%20Lint/badge.svg)](https://github.com/shgysk8zer0/http/actions?query=workflow%3A%22PHP+Lint%22)
+[![Super Linter](https://github.com/shgysk8zer0/http/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/shgysk8zer0/http/actions?query=workflow%3A%22Lint+Code+Base%22)
 [![GitHub license](https://img.shields.io/github/license/shgysk8zer0/http.svg)](https://github.com/shgysk8zer0/http/blob/master/LICENSE)
 ![GitHub last commit](https://img.shields.io/github/last-commit/shgysk8zer0/http.svg)
 ![GitHub release](https://img.shields.io/github/release/shgysk8zer0/http.svg)
@@ -43,7 +44,7 @@ try {
 
   $cache = new FileCache();
   $logger = new ConsoleLogger();
-  
+
   $req = new Request($url, [
     'method'      => 'POST',
     'referrer'    => 'no-referrer',
@@ -61,28 +62,28 @@ try {
         'upload'   => new UploadFile('upload'),
     ])
   ]);
-  
+
   $req->setLogger($logger);
-  
+
   // For compatibility with `CacheInterface` `Request.cache = 'default'` -> `Request::setCacheMode('default')`
   // and `Request::setCache(CacheInterface $cache)`
   $req->setCache($cache);
-  
+
   if ($resp = $req->send($timeout)) {
     $resp->headers->set('Content-SecurityPolicy', ContentSecurityPolicy::fromIniFile('./csp.ini'));
-    
+
     $resp->headers->set('Feature-Policy', new FeaturePolicy([
       'geolocation' => 'self',
       'camera'      => 'self',
     ]));
-    
+
     $resp->headers->append('Set-Cookie', new Cookie('name','value', [
       'secure'   => true,
       'httpOnly' => true,
       'expires'  => new DateInterval('P1D'),
       'sameSite' => 'Strict',
     ]);
-    
+
     // `Response::send()` sends HTTP status code, headers, & body
     $resp->send();
   } else {
@@ -93,7 +94,7 @@ try {
       ]),
       'status'                    => HTTP::BAD_GATEWAY,
     ]);
-    
+
     $resp->send();
   }
 } catch (Throwable $e) {
@@ -104,14 +105,14 @@ try {
     'file'    => $e->getFile(),
     'line'    => $e->getLine(),
   ]);
-  
+
   $resp = new Response(new Body('An error occured'), [
     'status'  => HTTP::INTERNAL_SERVER_ERROR,
     'headers' => new Headers([
       'Content-Type' => 'text/plain',
     ]),
   ]);
-  
+
   $resp->send();
 }
 ```
