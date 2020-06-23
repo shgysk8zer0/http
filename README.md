@@ -1,5 +1,5 @@
 # http
-[]![PHP Lint](https://github.com/shgysk8zer0/http/workflows/PHP%20Lint/badge.svg)](https://github.com/shgysk8zer0/http/actions?query=workflow%3A%22PHP+Lint%22)
+[![PHP Lint](https://github.com/shgysk8zer0/http/workflows/PHP%20Lint/badge.svg)](https://github.com/shgysk8zer0/http/actions?query=workflow%3A%22PHP+Lint%22)
 [![Super Linter](https://github.com/shgysk8zer0/http/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/shgysk8zer0/http/actions?query=workflow%3A%22Lint+Code+Base%22)
 [![GitHub license](https://img.shields.io/github/license/shgysk8zer0/http.svg)](https://github.com/shgysk8zer0/http/blob/master/LICENSE)
 ![GitHub last commit](https://img.shields.io/github/last-commit/shgysk8zer0/http.svg)
@@ -121,7 +121,7 @@ try {
 This is built to be installed as a submodule and loaded using [`spl_autoload`](https://www.php.net/manual/en/function.spl-autoload)
 
 To install, just
-```
+```bash
 git submodule add https://github.com/shgysk8zer0/http.git $classes_dir/shgysk8zer0/http
 ```
 
